@@ -88,7 +88,7 @@ After a few seconds the Omniverse UI will appear. The first launch may take long
 
 ## Step 2 — Technical Architecture
 
-![System Architecture Diagram](OmniArch.png)
+![System Architecture Diagram](UrbanDrivingSimulation-Architecture.png)
 
 This simulation is composed of **six Python BehaviorScripts**, each attached to a USD prim in the Omniverse scene. They communicate exclusively through **USD attributes** and a **carb singleton registry** — no direct imports between scripts, no hard-coded dependencies.
 
