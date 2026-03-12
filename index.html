@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Urban Driving Simulation — NVIDIA Omniverse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --green: #76b900;
+    --green-dim: #4a7a00;
+    --green-glow: rgba(118,185,0,0.15);
+    --bg: #0a0c0a;
+    --bg2: #0f120f;
+    --bg3: #141914;
+    --surface: #181e17;
+    --surface2: #1e261d;
+    --border: #2a3829;
+    --border-bright: #3a5238;
+    --text: #e8f0e6;
+    --text-dim: #7a9477;
+    --text-muted: #4a6048;
+    --orange: #ff6b00;
+    --blue: #3b9eff;
+    --purple: #9b72ff;
+    --red: #ff4444;
+    --yellow: #ffc107;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── grid bg ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(118,185,0,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(118,185,0,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(10,12,10,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-logo {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 13px;
+    color: var(--green);
+    letter-spacing: 0.05em;
+    text-decoration: none;
+  }
+
+  .nav-logo span { color: var(--text-dim); font-weight: 400; }
+
+  nav ul {
+    list-style: none;
+    display: flex;
+    gap: 0;
+  }
+
+  nav ul li a {
+    display: block;
+    padding: 0 14px;
+    height: 56px;
+    line-height: 56px;
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    transition: color 0.2s, background 0.2s;
+    border-right: 1px solid var(--border);
+  }
+
+  nav ul li:first-child a { border-left: 1px solid var(--border); }
+  nav ul li a:hover { color: var(--green); background: var(--green-glow); }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 120px 4rem 80px;
+    overflow: hidden;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: -200px; right: -200px;
+    width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(118,185,0,0.07) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .hero-tag {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--green);
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: fadeUp 0.6s 0.1s forwards;
+  }
+
+  .hero-tag::before {
+    content: '▶ ';
+    color: var(--green-dim);
+  }
+
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 5vw, 4.2rem);
+    font-weight: 800;
+    line-height: 1.05;
+    color: #fff;
+    max-width: 820px;
+    opacity: 0;
+    animation: fadeUp 0.6s 0.2s forwards;
+  }
+
+  .hero h1 em {
+    font-style: normal;
+    color: var(--green);
+  }
+
+  .hero-sub {
+    margin-top: 1.5rem;
+    font-size: 15px;
+    color: var(--text-dim);
+    max-width: 560px;
+    line-height: 1.8;
+    opacity: 0;
+    animation: fadeUp 0.6s 0.35s forwards;
+  }
+
+  .hero-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 2rem;
+    opacity: 0;
+    animation: fadeUp 0.6s 0.45s forwards;
+  }
+
+  .pill {
+    padding: 4px 14px;
+    border: 1px solid var(--border-bright);
+    border-radius: 2px;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    background: var(--surface);
+  }
+
+  .pill.green { border-color: var(--green-dim); color: var(--green); background: var(--green-glow); }
+
+  .hero-cta {
+    display: flex;
+    gap: 12px;
+    margin-top: 2.5rem;
+    opacity: 0;
+    animation: fadeUp 0.6s 0.55s forwards;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-decoration: none;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+  }
+
+  .btn-primary {
+    background: var(--green);
+    color: #000;
+    font-weight: 500;
+  }
+
+  .btn-primary:hover { background: #8fd400; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(118,185,0,0.3); }
+
+  .btn-secondary {
+    border-color: var(--border-bright);
+    color: var(--text-dim);
+    background: transparent;
+  }
+
+  .btn-secondary:hover { border-color: var(--green-dim); color: var(--green); background: var(--green-glow); }
+
+  .hero-scroll {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    animation: bounce 2s infinite;
+  }
+
+  .hero-scroll::after {
+    content: '';
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(var(--text-muted), transparent);
+  }
+
+  /* ── SECTIONS ── */
+  section {
+    position: relative;
+    z-index: 1;
+    padding: 80px 4rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--text-muted);
+    margin-bottom: 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    max-width: 60px;
+    height: 1px;
+    background: var(--border);
+  }
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 2rem;
+  }
+
+  h2 span { color: var(--green); }
+
+  h3 {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.6rem;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 0;
+  }
+
+  /* ── STEP SECTION ── */
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 2.5rem;
+  }
+
+  .step-num {
+    width: 48px; height: 48px;
+    border: 1px solid var(--green-dim);
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--green);
+    background: var(--green-glow);
+    flex-shrink: 0;
+  }
+
+  /* ── CARDS ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .card {
+    background: var(--bg2);
+    padding: 1.8rem;
+    transition: background 0.2s;
+  }
+
+  .card:hover { background: var(--surface); }
+
+  .card-icon {
+    font-size: 1.4rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .card-tag {
+    display: inline-block;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    padding: 2px 8px;
+    border-radius: 1px;
+    margin-bottom: 0.8rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  .card ul {
+    list-style: none;
+    margin-top: 0.8rem;
+  }
+
+  .card ul li {
+    padding: 3px 0;
+    color: var(--text-dim);
+    font-size: 12px;
+    padding-left: 14px;
+    position: relative;
+  }
+
+  .card ul li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--text-muted);
+  }
+
+  /* coloured card accents */
+  .card.green  { border-top: 2px solid var(--green); }
+  .card.orange { border-top: 2px solid var(--orange); }
+  .card.blue   { border-top: 2px solid var(--blue); }
+  .card.purple { border-top: 2px solid var(--purple); }
+  .card.lime   { border-top: 2px solid #a8e63d; }
+
+  /* ── ARCH IMAGE ── */
+  .arch-wrap {
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    background: #fff;
+    margin: 2rem 0;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  .arch-wrap img { width: 100%; display: block; }
+
+  /* ── PRINCIPLES ── */
+  .principles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin: 2rem 0;
+  }
+
+  .principle {
+    background: var(--bg2);
+    padding: 1.6rem;
+  }
+
+  .principle-num {
+    font-size: 2.5rem;
+    font-weight: 800;
+    font-family: var(--font-display);
+    color: var(--green-dim);
+    line-height: 1;
+    margin-bottom: 0.6rem;
+    opacity: 0.4;
+  }
+
+  .principle h4 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.4rem;
+    font-size: 0.95rem;
+  }
+
+  .principle p {
+    color: var(--text-dim);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  /* ── CODE BLOCKS ── */
+  pre {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--green-dim);
+    padding: 1.2rem 1.4rem;
+    overflow-x: auto;
+    font-size: 12px;
+    line-height: 1.8;
+    color: #a8d8a0;
+    margin: 1rem 0;
+    border-radius: 0 2px 2px 0;
+  }
+
+  code {
+    background: var(--surface);
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-size: 12px;
+    color: var(--green);
+    border: 1px solid var(--border);
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+    border: none;
+    color: inherit;
+  }
+
+  /* ── STEPS LIST ── */
+  .steps-list {
+    counter-reset: steps;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--border);
+  }
+
+  .steps-list li {
+    counter-increment: steps;
+    display: flex;
+    gap: 1.4rem;
+    padding: 1.4rem 1.6rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    transition: background 0.2s;
+  }
+
+  .steps-list li:last-child { border-bottom: none; }
+  .steps-list li:hover { background: var(--surface); }
+
+  .steps-list li::before {
+    content: counter(steps, decimal-leading-zero);
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: var(--green-dim);
+    min-width: 32px;
+    margin-top: 2px;
+  }
+
+  .steps-list li .step-content strong { color: #fff; display: block; margin-bottom: 4px; }
+  .steps-list li .step-content { color: var(--text-dim); font-size: 13px; }
+
+  /* ── TABLE ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 12px;
+  }
+
+  th {
+    background: var(--surface2);
+    color: var(--green);
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    border-bottom: 1px solid var(--border-bright);
+  }
+
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+    vertical-align: top;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface); }
+
+  td:first-child { color: var(--text); }
+  td code { font-size: 11px; }
+
+  /* ── FSM STATES ── */
+  .fsm {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 0.5rem 0;
+  }
+
+  .fsm-state {
+    padding: 3px 10px;
+    border-radius: 1px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    border: 1px solid currentColor;
+  }
+
+  .fsm-arrow { color: var(--text-muted); font-size: 12px; }
+
+  .fsm .FREE    { color: var(--green); border-color: var(--green-dim); background: rgba(118,185,0,0.08); }
+  .fsm .WAITING { color: var(--yellow); border-color: rgba(255,193,7,0.4); background: rgba(255,193,7,0.06); }
+  .fsm .CROSSED { color: var(--blue); border-color: rgba(59,158,255,0.4); background: rgba(59,158,255,0.06); }
+  .fsm .PROCEEDING { color: var(--orange); border-color: rgba(255,107,0,0.4); background: rgba(255,107,0,0.06); }
+
+  /* ── COMM TABLE ── */
+  .comm-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin: 1.5rem 0;
+  }
+
+  .comm-cell {
+    background: var(--bg2);
+    padding: 1.2rem 1.4rem;
+  }
+
+  .comm-cell h4 {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--green);
+    margin-bottom: 0.4rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+  }
+
+  .comm-cell p { color: var(--text-dim); font-size: 12px; }
+
+  /* ── TROUBLESHOOTING ── */
+  .trouble-item {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--orange);
+    background: var(--bg2);
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 1px;
+  }
+
+  .trouble-item strong { color: #fff; display: block; margin-bottom: 6px; }
+  .trouble-item p { color: var(--text-dim); font-size: 12px; }
+
+  /* ── ROADMAP ── */
+  .roadmap-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+  }
+
+  .roadmap-list li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 13px;
+    transition: background 0.15s;
+  }
+
+  .roadmap-list li:last-child { border-bottom: none; }
+  .roadmap-list li:hover { background: var(--surface); }
+
+  .roadmap-list li::before {
+    content: '◻';
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 2rem 4rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+
+  footer a { color: var(--green-dim); text-decoration: none; }
+  footer a:hover { color: var(--green); }
+
+  /* ── NOTE / WARN ── */
+  .note {
+    border-left: 3px solid var(--green-dim);
+    background: var(--green-glow);
+    padding: 0.8rem 1rem;
+    margin: 1rem 0;
+    font-size: 12px;
+    color: var(--text-dim);
+    border-radius: 0 2px 2px 0;
+  }
+
+  .warn {
+    border-left: 3px solid var(--orange);
+    background: rgba(255,107,0,0.06);
+    padding: 0.8rem 1rem;
+    margin: 1rem 0;
+    font-size: 12px;
+    color: var(--text-dim);
+    border-radius: 0 2px 2px 0;
+  }
+
+  .warn strong, .note strong { color: #fff; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%       { transform: translateX(-50%) translateY(6px); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s, transform 0.5s;
+  }
+
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    nav ul { display: none; }
+    .hero  { padding: 100px 1.5rem 60px; }
+    section { padding: 60px 1.5rem; }
+    .principles { grid-template-columns: 1fr; }
+    .comm-grid  { grid-template-columns: 1fr; }
+    .card-grid  { grid-template-columns: 1fr; }
+    footer { flex-direction: column; gap: 1rem; text-align: center; }
+  }
+
+  /* ── INLINE HIGHLIGHT ── */
+  .hl-green  { color: var(--green); }
+  .hl-orange { color: var(--orange); }
+  .hl-blue   { color: var(--blue); }
+  .hl-purple { color: var(--purple); }
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <a class="nav-logo" href="#">UrbanDriving<span>Sim</span></a>
+  <ul>
+    <li><a href="#step1">BREV DEPLOY</a></li>
+    <li><a href="#architecture">ARCHITECTURE</a></li>
+    <li><a href="#modules">MODULES</a></li>
+    <li><a href="#reference">REFERENCE</a></li>
+    <li><a href="#troubleshooting">DEBUG</a></li>
+    <li><a href="https://github.com/aRathinasamy/UrbanDrivingSimulation-NVIDIAOmniverse" target="_blank">GITHUB ↗</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <p class="hero-tag">NVIDIA OMNIVERSE · PYTHON BEHAVIORSCRIPTS · OPEN USD</p>
+  <h1>Urban Driving<br/><em>Simulation</em></h1>
+  <p class="hero-sub">A fully modular, real-time urban traffic simulation built on NVIDIA Omniverse. USD acts as a live shared data bus — every behaviour is a self-contained Python BehaviorScript with zero hard-coded dependencies.</p>
+  <div class="hero-pills">
+    <span class="pill green">Python BehaviorScripts</span>
+    <span class="pill green">OpenUSD</span>
+    <span class="pill">NVIDIA Brev</span>
+    <span class="pill">RTX Rendering</span>
+    <span class="pill">PhysX</span>
+    <span class="pill">BasisCurves</span>
+    <span class="pill">carb.input</span>
+  </div>
+  <div class="hero-cta">
+    <a class="btn btn-primary" href="#step1">▶&nbsp; Deploy on Brev</a>
+    <a class="btn btn-secondary" href="#architecture">View Architecture →</a>
+  </div>
+  <div class="hero-scroll">SCROLL</div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════
+     STEP 1 — BREV
+     ══════════════════════════════════════ -->
+<section id="step1" class="reveal">
+  <div class="section-label">STEP 01</div>
+  <div class="step-header">
+    <div class="step-num">01</div>
+    <h2>Run on <span>NVIDIA Brev</span></h2>
+  </div>
+
+  <p style="color:var(--text-dim); max-width:660px; margin-bottom:2rem;">
+    This project runs on <strong style="color:#fff">NVIDIA Brev</strong> — a cloud-hosted Omniverse environment accessible entirely from your browser. No local GPU setup required.
+  </p>
+
+  <div class="note">
+    <strong>📌 Full Brev setup guide:</strong>
+    <a href="https://github.com/aRathinasamy/kit-app-template-launchable/blob/main/README.md" style="color:var(--green); text-decoration:none;" target="_blank">
+      kit-app-template-launchable ↗
+    </a>
+  </div>
+
+  <h3 style="margin-top:2.5rem; margin-bottom:1rem;">🚀 Deploy</h3>
+  <ol class="steps-list">
+    <li><div class="step-content"><strong>Click Deploy Now</strong> on the <a href="https://github.com/aRathinasamy/kit-app-template-launchable/blob/main/README.md" style="color:var(--green)" target="_blank">Kit App Template Launchable</a> to open the Brev page</div></li>
+    <li><div class="step-content"><strong>Click Deploy Launchable</strong> in Brev to spin up the instance</div></li>
+    <li><div class="step-content"><strong>Wait until fully ready</strong> — status shows <em>running</em>, <em>built</em>, and setup script complete<br/><span style="color:var(--text-muted); font-size:11px;">⏱ First launch can take several minutes while the environment builds</span></div></li>
+    <li><div class="step-content"><strong>Scroll to "Using Secure Links"</strong> on the Brev instance page</div></li>
+    <li><div class="step-content"><strong>Click the arrow icon</strong> next to the Shareable URL and log in with your NVIDIA Brev account</div></li>
+  </ol>
+
+  <h3 style="margin-top:2.5rem; margin-bottom:1rem;">🛠 Configure Kit App Template</h3>
+  <p style="color:var(--text-dim); margin-bottom:1rem;">Once inside the Visual Studio Code browser environment:</p>
+
+<pre><code># Navigate to Kit App Template
+cd kit-app-template
+
+# Launch the configuration wizard
+./repo.sh template new</code></pre>
+
+  <p style="color:var(--text-dim); margin-bottom:1rem;">Follow the wizard prompts:</p>
+
+  <table>
+    <tr><th>PROMPT</th><th>VALUE</th></tr>
+    <tr><td>What to create</td><td><code>Application</code></td></tr>
+    <tr><td>Template</td><td><code>USD Composer</code></td></tr>
+    <tr><td>Application name</td><td><em style="color:var(--text-muted)">your choice</em></td></tr>
+    <tr><td>Add application layers?</td><td><code>Yes</code></td></tr>
+    <tr><td>Toggle streaming layer</td><td><code>omni_default_streaming</code> → Omniverse Kit App Streaming (Default)</td></tr>
+  </table>
+
+<pre><code># Build the application
+./repo.sh build
+
+# Launch in headless / streaming mode
+./repo.sh launch -- --no-window
+# Select: ApplicationLayerTemplate [your_app_name]_streaming.kit</code></pre>
+
+  <div class="warn"><strong>⚠️ Important:</strong> Make sure to select the kit file with the <strong>streaming application layer</strong></div>
+
+  <h3 style="margin-top:2.5rem; margin-bottom:1rem;">🖥 Open the Viewer</h3>
+  <p style="color:var(--text-dim); margin-bottom:1rem;">Open a new browser tab and navigate to:</p>
+
+<pre><code>https://[your-brev-url]/viewer/</code></pre>
+
+  <div class="note">
+    <strong>Example:</strong> if VSCode is at <code>https://kat.brevlab-1234</code>, the viewer is at <code>https://kat.brevlab-1234/viewer/</code>
+  </div>
+
+  <div class="warn" style="margin-top:1rem;"><strong>⚠️</strong> Keep only <strong>one viewer tab open</strong> at a time for best results. On subsequent relaunches, simply refresh the tab.</div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════
+     STEP 2 — ARCHITECTURE
+     ══════════════════════════════════════ -->
+<section id="architecture" class="reveal">
+  <div class="section-label">STEP 02</div>
+  <div class="step-header">
+    <div class="step-num">02</div>
+    <h2>Technical <span>Architecture</span></h2>
+  </div>
+
+  <div class="arch-wrap">
+    <img src="OmniArch.png" alt="System Architecture Diagram — Urban Driving Simulation"/>
+  </div>
+
+  <p style="color:var(--text-dim); max-width:720px; margin-bottom:2rem;">
+    The simulation is composed of <strong style="color:#fff">six Python BehaviorScripts</strong>, each attached to a USD prim. They communicate exclusively through <strong style="color:#fff">USD attributes</strong> and a <strong style="color:#fff">carb singleton registry</strong> — no direct imports between scripts, no hard-coded dependencies.
+  </p>
+
+  <h3 style="margin-bottom:1rem;">Core Design Principles</h3>
+  <div class="principles">
+    <div class="principle">
+      <div class="principle-num">01</div>
+      <h4>USD Stage is the Data Bus</h4>
+      <p>Every piece of shared state — traffic light phase, road curves, spawn config — lives as a USD attribute on a prim. Any script can publish or subscribe at any time.</p>
+    </div>
+    <div class="principle">
+      <div class="principle-num">02</div>
+      <h4>The Scene is the Config</h4>
+      <p>Configure every module entirely through prim properties in the Omniverse UI. No code changes needed to add a new intersection, traffic light, or vehicle type.</p>
+    </div>
+    <div class="principle">
+      <div class="principle-num">03</div>
+      <h4>Scripts are Decoupled</h4>
+      <p>VehicleController doesn't call Vehicle directly — it spawns a prim and attaches the script. TrafficLight doesn't know Vehicle exists — it just writes <code>currentState</code>.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════
+     MODULES
+     ══════════════════════════════════════ -->
+<section id="modules" class="reveal">
+  <div class="section-label">MODULES</div>
+  <h2>Script <span>Reference</span></h2>
+
+  <div class="card-grid">
+
+    <!-- VehicleController -->
+    <div class="card lime">
+      <div class="card-icon">🟢</div>
+      <span class="card-tag">MANAGER / SPAWNER</span>
+      <h3>VehicleController.py</h3>
+      <p style="color:var(--text-dim); font-size:12px; margin-bottom:0.6rem;">Owns the full lifecycle of all cars in the scene. Never drives — that's Vehicle's job.</p>
+      <ul>
+        <li>Loads Car Pool dataset (USD / JSON asset list)</li>
+        <li>Dynamically spawns car prims into USD Stage</li>
+        <li>Assigns Road Network curves to each spawned car</li>
+        <li>Attaches Vehicle.py BehaviorScript to each prim</li>
+        <li>Staggered <code>startDelay</code> prevents spawn overlap</li>
+        <li>Recycles &amp; despawns cars that complete routes</li>
+      </ul>
+    </div>
+
+    <!-- Vehicle -->
+    <div class="card green">
+      <div class="card-icon">🚗</div>
+      <span class="card-tag">PER-CAR BEHAVIOUR</span>
+      <h3>Vehicle.py</h3>
+      <p style="color:var(--text-dim); font-size:12px; margin-bottom:0.6rem;">Auto-attached by VehicleController. Handles everything a single car does.</p>
+      <ul>
+        <li>BasisCurves spline following + route chaining</li>
+        <li>Look-ahead orientation · per-seed random speed</li>
+        <li>Signal stop FSM:
+          <div class="fsm" style="margin-top:4px;">
+            <span class="fsm-state FREE">FREE</span><span class="fsm-arrow">→</span>
+            <span class="fsm-state WAITING">WAITING</span><span class="fsm-arrow">→</span>
+            <span class="fsm-state CROSSED">CROSSED</span>
+          </div>
+        </li>
+        <li>All-stop intersection queuing:
+          <div class="fsm" style="margin-top:4px; flex-wrap:wrap;">
+            <span class="fsm-state FREE">FREE</span><span class="fsm-arrow">→</span>
+            <span class="fsm-state WAITING">WAIT</span><span class="fsm-arrow">→</span>
+            <span class="fsm-state PROCEEDING">PROC</span><span class="fsm-arrow">→</span>
+            <span class="fsm-state CROSSED">CROSS</span>
+          </div>
+        </li>
+        <li>Three-zone gap keeping · follow target mode</li>
+      </ul>
+    </div>
+
+    <!-- TrafficLight -->
+    <div class="card orange">
+      <div class="card-icon">🚦</div>
+      <span class="card-tag">BEHAVIORSCRIPT</span>
+      <h3>TrafficLight.py</h3>
+      <ul>
+        <li>GREEN → YELLOW → RED → GREEN cycle</li>
+        <li>Individually configurable phase durations</li>
+        <li>Phase offset + startState for staggering</li>
+        <li>Bulb albedo via shader <code>diffuse_color_constant</code></li>
+        <li>Writes <code>currentState</code> Token to USD on each transition</li>
+      </ul>
+    </div>
+
+    <!-- AllStopIntersection -->
+    <div class="card blue">
+      <div class="card-icon">🛑</div>
+      <span class="card-tag">BEHAVIORSCRIPT</span>
+      <h3>AllStopIntersection.py</h3>
+      <ul>
+        <li>FIFO arrival-order queue</li>
+        <li>Right-of-way by arrival time</li>
+        <li><code>stopDuration</code> enforcement</li>
+        <li><code>clearanceDelay</code> between departures</li>
+        <li><code>register_arrival</code> · <code>can_proceed</code> · <code>clear</code></li>
+        <li>Instance in <code>carb._intersection_registry</code></li>
+      </ul>
+    </div>
+
+    <!-- FreeCamera -->
+    <div class="card purple">
+      <div class="card-icon">🎥</div>
+      <span class="card-tag">BEHAVIORSCRIPT</span>
+      <h3>FreeCamera.py</h3>
+      <ul>
+        <li><strong style="color:#fff">Manual:</strong> WASD + QE navigation, Shift 3× speed</li>
+        <li><strong style="color:#fff">Follow:</strong> set <code>followTargetPath</code> to any car prim</li>
+        <li>Offset along car's local X axis (<code>offsetX</code>)</li>
+        <li>Height in world Y (<code>offsetY</code>)</li>
+        <li>Pitch + yaw from look-direction vector</li>
+        <li><code>followSmoothing</code> lerp prevents jitter</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════
+     REFERENCE
+     ══════════════════════════════════════ -->
+<section id="reference" class="reveal">
+  <div class="section-label">REFERENCE</div>
+  <h2>USD Attributes <span>&amp; Communication</span></h2>
+
+  <p style="color:var(--text-dim); margin-bottom:1.5rem;">All inter-script state flows through USD attributes — no direct Python calls between scripts.</p>
+
+  <table>
+    <tr><th>ATTRIBUTE</th><th>PRIM</th><th>WRITTEN BY</th><th>READ BY</th></tr>
+    <tr><td><code>currentState</code> (Token)</td><td>TrafficLight</td><td>TrafficLight.py</td><td>Vehicle.py</td></tr>
+    <tr><td><code>curvePaths</code> (StringArray)</td><td>Vehicle</td><td>VehicleController.py</td><td>Vehicle.py</td></tr>
+    <tr><td><code>translate / rotate</code> (XformOps)</td><td>Any</td><td>Vehicle.py, FreeCamera.py</td><td>FreeCamera.py</td></tr>
+    <tr><td><code>carb._intersection_registry</code></td><td><em>(carb)</em></td><td>AllStopIntersection.py</td><td>Vehicle.py</td></tr>
+    <tr><td><code>_CAR_REGISTRY</code></td><td><em>(module)</em></td><td>Vehicle.py</td><td>Vehicle.py</td></tr>
+    <tr><td><code>carPoolDataset</code></td><td>Manager</td><td>Scene setup</td><td>VehicleController.py</td></tr>
+    <tr><td><code>routeAssignment</code></td><td>Manager</td><td>VehicleController.py</td><td>Vehicle.py</td></tr>
+  </table>
+
+  <h3 style="margin-top:2rem; margin-bottom:1rem;">Inter-Module Communication Channels</h3>
+
+  <div class="comm-grid">
+    <div class="comm-cell">
+      <h4>USD ATTRIBUTE BUS</h4>
+      <p>Primary communication channel. <code>currentState</code>, transforms, config floats — all scripts read/write via USD prim attributes.</p>
+    </div>
+    <div class="comm-cell">
+      <h4>CARB SINGLETON REGISTRY</h4>
+      <p><code>carb._intersection_registry</code> — Vehicle scripts call AllStopIntersection's <code>register_arrival</code>, <code>can_proceed</code>, and <code>clear</code> methods.</p>
+    </div>
+    <div class="comm-cell">
+      <h4>MODULE-LEVEL _CAR_REGISTRY</h4>
+      <p>Shared dict keyed per curve path. Enables per-curve gap detection between any two cars sharing the same road segment.</p>
+    </div>
+    <div class="comm-cell">
+      <h4>BEHAVIORSCRIPT LIFECYCLE</h4>
+      <p>All scripts follow the same pattern:<br/><code>on_init → on_play → on_update(dt) → on_stop</code><br/>Config is read at on_play; on_update uses cached values only.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════
+     TROUBLESHOOTING
+     ══════════════════════════════════════ -->
+<section id="troubleshooting" class="reveal">
+  <div class="section-label">DEBUG</div>
+  <h2><span>Troubleshooting</span></h2>
+
+  <div class="trouble-item">
+    <strong>Containers not running on Brev</strong>
+    <p>Run <code>docker ps</code> to check running containers. Expected: <code>web-viewer</code>, <code>vscode</code>, <code>dev-nginx-1</code></p>
+    <pre style="margin-top:0.6rem;"><code>docker compose down
+docker compose up -d</code></pre>
+  </div>
+
+  <div class="trouble-item">
+    <strong>Viewer tab won't connect</strong>
+    <p>Keep only one viewer tab open at a time. Refresh the tab after restarting containers.</p>
+  </div>
+
+  <div class="trouble-item">
+    <strong>Cars not stopping at intersection on second lap</strong>
+    <p><code>_intersection_state</code> must reset to <code>FREE</code> at the loop boundary alongside <code>_stop_state</code>. Ensure you are on the latest <code>Vehicle.py</code>.</p>
+  </div>
+
+  <div class="trouble-item">
+    <strong>Camera snapping back when rotating</strong>
+    <p><code>FreeCamera.py</code> must not write rotation each frame. Older versions wrote a fixed <code>Y=-90</code> which conflicts with Omniverse's built-in right-click mouse look.</p>
+  </div>
+
+  <div class="trouble-item" style="border-left-color: var(--blue);">
+    <strong>Navigation speed too fast on Brev streaming</strong>
+    <p>Run <code>set_navigation_speed.py</code> in the Script Editor and set <code>ROTATION_SPEED = 0.3</code>.</p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════
+     ROADMAP
+     ══════════════════════════════════════ -->
+<section id="roadmap" class="reveal">
+  <div class="section-label">ROADMAP</div>
+  <h2>What's <span>Next</span></h2>
+
+  <ul class="roadmap-list">
+    <li>Pedestrian agents with crosswalk awareness</li>
+    <li>Emergency vehicle priority override</li>
+    <li>Roundabout controller script</li>
+    <li>Multi-lane roads with lane-change behaviour</li>
+    <li>Synthetic data export for AV perception model training</li>
+    <li>Real-world road network import via OpenStreetMap → USD</li>
+  </ul>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div>Built with <span class="hl-green">NVIDIA Omniverse</span> · Python BehaviorScripts · OpenUSD</div>
+  <div>
+    <a href="https://github.com/NVIDIA-Omniverse/kit-app-template/blob/main/LICENSE" target="_blank">NVIDIA License ↗</a>
+    &nbsp;·&nbsp;
+    <a href="https://github.com/aRathinasamy/UrbanDrivingSimulation-NVIDIAOmniverse" target="_blank">GitHub ↗</a>
+  </div>
+</footer>
+
+<script>
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // Active nav highlight
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav ul li a');
+
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 100) current = s.id;
+    });
+    navLinks.forEach(a => {
+      a.style.color = a.getAttribute('href') === '#' + current ? 'var(--green)' : '';
+    });
+  });
+</script>
+</body>
+</html>
