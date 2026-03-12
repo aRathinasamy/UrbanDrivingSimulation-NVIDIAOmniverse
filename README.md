@@ -106,28 +106,24 @@ This simulation is composed of **six Python BehaviorScripts**, each attached to 
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    OMNIVERSE PLATFORM — USD STAGE                   │
 │                                                                     │
-│        ┌──────────────────────────────────────────────┐            │
-│        │         USD STAGE — SHARED DATA BUS          │            │
-│        │  currentState · curvePaths · transforms      │            │
+│        ┌──────────────────────────────────────────────┐             │
+│        │         USD STAGE — SHARED DATA BUS          │             │
+│        │  currentState · curvePaths · transforms      │             │
 │        │  carPoolDataset · routeAssignment             │            │
-│        └──────┬───────────────────┬──────────────────┘            │
+│        └──────┬───────────────────┬──────────────────┘              │
 │               │ writes            │ reads / writes                  │
-│        ┌──────▼──────┐    ┌───────▼──────────────────┐            │
-│        │ TrafficLight│    │   VehicleController       │            │
-│        │   .py       │    │   (Manager / Spawner)     │◄── CarPool │
-│        └─────────────┘    └───────┬──────────────────┘            │
-│                                   │ spawns + attaches              │
-│                          ┌────────▼──────────────────┐            │
-│                          │       Vehicle.py           │            │
-│                          │  (Per-Car Behaviour)       │──────────► │
-│                          │  curve follow · signals    │  queries   │
-│                          │  gap keeping · FSM         │  AllStop   │
-│                          └────────────────────────────┘  Registry  │
+│        ┌──────▼──────┐    ┌───────▼──────────────────┐              │
+│        │ TrafficLight│    │   VehicleController       │             │
+│        │   .py       │    │   (Manager / Spawner)     │◄── CarPool  │
+│        └─────────────┘    └───────┬──────────────────┘              │
+│                                   │ spawns + attaches               │
+│                          ┌────────▼──────────────────┐              │
+│                          │       Vehicle.py           │             │
+│                          │  (Per-Car Behaviour)       │──────────►  │
+│                          │  curve follow · signals    │  queries    │
+│                          │  gap keeping · FSM         │  AllStop    │
+│                          └────────────────────────────┘  Registry   │
 │                                                                     │
-│                          ┌────────────────────────────┐            │
-│                          │       FreeCamera.py        │            │
-│                          │  WASD · car-follow mode    │            │
-│                          └────────────────────────────┘            │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -203,24 +199,6 @@ Manages right-of-way at all-way stop intersections using a FIFO queue:
 
 <br>
 
-### 🟣 FreeCamera.py
-> `BehaviorScript` attached to a Camera prim
-
-Two modes, switched by a single USD attribute:
-
-**Manual mode** (`followTargetPath` is empty)
-- WASD + QE keyboard navigation via `carb.input` subscription
-- Right mouse button look handled natively by Omniverse
-- `Shift` for 3× speed
-
-**Car-follow mode** (`followTargetPath` set to a vehicle prim path)
-- Reads the target car's world matrix every frame
-- Positions camera at: `car_pos + car_local_X * offsetX + world_Y * offsetY`
-- Derives pitch + yaw from look-direction vector — camera always points naturally at the car
-- `followSmoothing` lerp factor prevents jitter
-
----
-
 ## USD Attributes Reference
 
 All inter-script state flows through USD attributes — no direct Python calls between scripts.
@@ -261,14 +239,13 @@ Expected containers: `web-viewer`, `vscode`, `dev-nginx-1`
 
 **Cars not stopping at intersection on second lap** — `_intersection_state` must reset to `FREE` at the loop boundary alongside `_stop_state`. Ensure you are on the latest `Vehicle.py`.
 
-**Camera snapping back when rotating** — `FreeCamera.py` must not write rotation each frame. Older versions wrote a fixed `Y=-90` which conflicts with Omniverse's built-in right-click mouse look.
-
 **Navigation speed too fast on Brev streaming** — Run `set_navigation_speed.py` in the Script Editor and set `ROTATION_SPEED = 0.3`.
 
 ---
 
 ## Roadmap
-
+- [ ]  Autonomous vehicle (AV) simulation, The ego vehicle must follow either a pre-defined route or a waypoint list.
+- [ ]  Autonomous vehicle (AV) simulation, Non-ego vehicles exhibiting distinct behaviors (e.g., vehicles passing through vs. turning vehicles).
 - [ ] Pedestrian agents with crosswalk awareness
 - [ ] Emergency vehicle priority override
 - [ ] Roundabout controller script
